@@ -68,6 +68,7 @@ export default function Home() {
         <TaskForm
           selectedDay={selectedDay}
           editingTask={editingTask}
+          tasks={tasks}
           error={error}
           onSubmit={upsertTask}
           onClose={closeForm}
