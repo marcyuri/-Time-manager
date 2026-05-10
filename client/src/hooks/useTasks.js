@@ -1,22 +1,26 @@
-import { useEffect, useMemo, useState } from 'react'
-import { getTasks, saveTasks } from '../services/taskService'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getTasks, createTask, updateTask, removeTask } from '../services/taskService'
 import { hasTaskConflict } from '../utils/time'
 
 export function useTasks() {
-  const [tasks, setTasks] = useState(() => getTasks())
+  const [tasks, setTasks] = useState([])
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    saveTasks(tasks)
-  }, [tasks])
+    getTasks()
+      .then(setTasks)
+      .catch(() => setError('Erreur lors du chargement des tâches.'))
+      .finally(() => setLoading(false))
+  }, [])
 
   const filteredTasks = useMemo(() => {
     if (priorityFilter === 'all') return tasks
     return tasks.filter((task) => task.priority === priorityFilter)
   }, [tasks, priorityFilter])
 
-  function upsertTask(taskData) {
+  async function upsertTask(taskData) {
     const nextTask = {
       ...taskData,
       id: taskData.id || crypto.randomUUID(),
@@ -29,35 +33,53 @@ export function useTasks() {
       return false
     }
 
-    setTasks((currentTasks) => {
-      const taskExists = currentTasks.some((task) => task.id === nextTask.id)
+    try {
+      const taskExists = tasks.some((task) => task.id === nextTask.id)
       if (taskExists) {
-        return currentTasks.map((task) => (task.id === nextTask.id ? nextTask : task))
+        const updated = await updateTask(nextTask.id, nextTask)
+        setTasks((current) => current.map((t) => (t.id === updated.id ? updated : t)))
+      } else {
+        const created = await createTask(nextTask)
+        setTasks((current) => [...current, created])
       }
-      return [...currentTasks, nextTask]
-    })
-
-    setError('')
-    return true
+      setError('')
+      return true
+    } catch {
+      setError('Erreur lors de la sauvegarde de la tâche.')
+      return false
+    }
   }
 
-  function deleteTask(taskId) {
-    setTasks((currentTasks) => currentTasks.filter((task) => task.id !== taskId))
+  async function deleteTask(taskId) {
+    try {
+      await removeTask(taskId)
+      setTasks((current) => current.filter((task) => task.id !== taskId))
+    } catch {
+      setError('Erreur lors de la suppression de la tâche.')
+    }
   }
 
-  function toggleTaskStatus(taskId) {
-    setTasks((currentTasks) =>
-      currentTasks.map((task) =>
-        task.id === taskId
-          ? { ...task, status: task.status === 'done' ? 'todo' : 'done' }
-          : task,
-      ),
-    )
+  async function toggleTaskStatus(taskId) {
+    const task = tasks.find((t) => t.id === taskId)
+    if (!task) return
+
+    const nextStatus = task.status === 'done' ? 'todo' : 'done'
+    try {
+      const updated = await updateTask(taskId, { ...task, status: nextStatus })
+      setTasks((current) => current.map((t) => (t.id === updated.id ? updated : t)))
+    } catch {
+      setError('Erreur lors de la mise à jour du statut.')
+    }
   }
 
-  function resetTasks() {
-    setTasks([])
-    setError('')
+  async function resetTasks() {
+    try {
+      await Promise.all(tasks.map((t) => removeTask(t.id)))
+      setTasks([])
+      setError('')
+    } catch {
+      setError('Erreur lors de la réinitialisation.')
+    }
   }
 
   return {
@@ -71,5 +93,6 @@ export function useTasks() {
     deleteTask,
     toggleTaskStatus,
     resetTasks,
+    loading,
   }
 }

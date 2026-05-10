@@ -1,0 +1,17 @@
+{
+  "name": "managerbyroux",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@netlify/database": "latest",
+    "drizzle-orm": "beta"
+  },
+  "devDependencies": {
+    "@netlify/functions": "latest",
+    "drizzle-kit": "beta"
+  }
+}
