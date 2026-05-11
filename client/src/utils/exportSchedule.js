@@ -1,88 +1,120 @@
-import html2canvas from "html2canvas"
+import html2canvas from 'html2canvas'
 
-export async function exportNodeAsPng(node, fileName = "emploi-du-temps.png") {
+export async function exportNodeAsPng(
+  node,
+  fileName = 'emploi-du-temps.png'
+) {
   if (!node) return
 
-  const calendar = node
-  const dayColumns = calendar.querySelectorAll(".day-column")
-  const taskContainers = calendar.querySelectorAll(".day-column__tasks")
+  const grid = node.querySelector('.week-calendar__grid')
+  const dayColumns = node.querySelectorAll('.day-column')
+  const taskContainers = node.querySelectorAll('.day-column__tasks')
 
-  const originalCalendarStyle = {
-    width: calendar.style.width,
-    height: calendar.style.height,
-    maxHeight: calendar.style.maxHeight,
-    overflow: calendar.style.overflow,
+  const originalNodeStyle = {
+    width: node.style.width,
+    minWidth: node.style.minWidth,
+    height: node.style.height,
+    overflow: node.style.overflow,
   }
 
-  const originalDayStyles = Array.from(dayColumns).map((el) => ({
-    el,
-    height: el.style.height,
-    minHeight: el.style.minHeight,
-    maxHeight: el.style.maxHeight,
-    overflow: el.style.overflow,
+  const originalGridStyle = grid
+    ? {
+        display: grid.style.display,
+        gridTemplateColumns: grid.style.gridTemplateColumns,
+        width: grid.style.width,
+        minWidth: grid.style.minWidth,
+      }
+    : null
+
+  const originalDayStyles = Array.from(dayColumns).map((column) => ({
+    column,
+    height: column.style.height,
+    maxHeight: column.style.maxHeight,
+    overflow: column.style.overflow,
   }))
 
-  const originalTaskStyles = Array.from(taskContainers).map((el) => ({
-    el,
-    height: el.style.height,
-    maxHeight: el.style.maxHeight,
-    overflow: el.style.overflow,
+  const originalTaskStyles = Array.from(taskContainers).map((container) => ({
+    container,
+    height: container.style.height,
+    maxHeight: container.style.maxHeight,
+    overflow: container.style.overflow,
   }))
 
-  calendar.style.width = `${calendar.scrollWidth}px`
-  calendar.style.height = "auto"
-  calendar.style.maxHeight = "none"
-  calendar.style.overflow = "visible"
+  const exportWidth = Math.max(
+    node.scrollWidth,
+    grid?.scrollWidth || 0,
+    7 * 240 + 6 * 14 + 48
+  )
 
-  dayColumns.forEach((el) => {
-    el.style.height = "auto"
-    el.style.minHeight = "560px"
-    el.style.maxHeight = "none"
-    el.style.overflow = "visible"
+  node.style.width = `${exportWidth}px`
+  node.style.minWidth = `${exportWidth}px`
+  node.style.height = 'auto'
+  node.style.overflow = 'visible'
+
+  if (grid) {
+    grid.style.display = 'grid'
+    grid.style.gridTemplateColumns = 'repeat(7, 240px)'
+    grid.style.width = `${exportWidth}px`
+    grid.style.minWidth = `${exportWidth}px`
+  }
+
+  dayColumns.forEach((column) => {
+    column.style.height = 'auto'
+    column.style.maxHeight = 'none'
+    column.style.overflow = 'visible'
   })
 
-  taskContainers.forEach((el) => {
-    el.style.height = "auto"
-    el.style.maxHeight = "none"
-    el.style.overflow = "visible"
+  taskContainers.forEach((container) => {
+    container.style.height = 'auto'
+    container.style.maxHeight = 'none'
+    container.style.overflow = 'visible'
   })
 
   await new Promise((resolve) => requestAnimationFrame(resolve))
 
-  const canvas = await html2canvas(calendar, {
+  const finalWidth = Math.ceil(node.scrollWidth + 24)
+  const finalHeight = Math.ceil(node.scrollHeight + 24)
+
+  const canvas = await html2canvas(node, {
     scale: 2,
     useCORS: true,
-    backgroundColor: "#f8fafc",
+    backgroundColor: '#f8fafc',
     logging: false,
-    width: calendar.scrollWidth,
-    height: calendar.scrollHeight,
-    windowWidth: calendar.scrollWidth,
-    windowHeight: calendar.scrollHeight,
+    width: finalWidth,
+    height: finalHeight,
+    windowWidth: finalWidth,
+    windowHeight: finalHeight,
     scrollX: 0,
     scrollY: 0,
   })
 
-  calendar.style.width = originalCalendarStyle.width
-  calendar.style.height = originalCalendarStyle.height
-  calendar.style.maxHeight = originalCalendarStyle.maxHeight
-  calendar.style.overflow = originalCalendarStyle.overflow
+  node.style.width = originalNodeStyle.width
+  node.style.minWidth = originalNodeStyle.minWidth
+  node.style.height = originalNodeStyle.height
+  node.style.overflow = originalNodeStyle.overflow
 
-  originalDayStyles.forEach(({ el, height, minHeight, maxHeight, overflow }) => {
-    el.style.height = height
-    el.style.minHeight = minHeight
-    el.style.maxHeight = maxHeight
-    el.style.overflow = overflow
+  if (grid && originalGridStyle) {
+    grid.style.display = originalGridStyle.display
+    grid.style.gridTemplateColumns = originalGridStyle.gridTemplateColumns
+    grid.style.width = originalGridStyle.width
+    grid.style.minWidth = originalGridStyle.minWidth
+  }
+
+  originalDayStyles.forEach(({ column, height, maxHeight, overflow }) => {
+    column.style.height = height
+    column.style.maxHeight = maxHeight
+    column.style.overflow = overflow
   })
 
-  originalTaskStyles.forEach(({ el, height, maxHeight, overflow }) => {
-    el.style.height = height
-    el.style.maxHeight = maxHeight
-    el.style.overflow = overflow
+  originalTaskStyles.forEach(({ container, height, maxHeight, overflow }) => {
+    container.style.height = height
+    container.style.maxHeight = maxHeight
+    container.style.overflow = overflow
   })
 
-  const image = canvas.toDataURL("image/png")
+  const image = canvas.toDataURL('image/png')
+  const link = document.createElement('a')
 
-  const link = document.createElement("a")
   link.href = image
   link.download = fileName
   link.click()
