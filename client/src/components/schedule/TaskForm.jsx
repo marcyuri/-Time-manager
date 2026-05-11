@@ -456,7 +456,7 @@ export function TaskForm({
             className="btn--primary"
             type="submit"
           >
-            To Validate
+            Valider
           </Button>
 
         </div>
