@@ -34,6 +34,7 @@ export function TaskForm({
 }) {
 
   const [formData, setFormData] = useState(initialForm)
+  const [localError, setLocalError] = useState('')
 
   useEffect(() => {
 
@@ -117,20 +118,74 @@ export function TaskForm({
       [field]: value,
     }))
   }
+  function getTaskConflictMessage() {
+    const startMinutes = timeToMinutes(formData.startTime)
+    const duration = Number(formData.duration)
+    const endMinutes = startMinutes + duration
+
+    if (!formData.title.trim()) {
+      return 'Le titre de la tâche est obligatoire.'
+    }
+
+    if (!formData.startTime) {
+      return 'L’heure de début est obligatoire.'
+    }
+
+    if (!duration || duration <= 0) {
+      return 'La durée doit être supérieure à 0 minute.'
+    }
+
+    if (endMinutes > 24 * 60) {
+      return 'La tâche dépasse la fin de la journée.'
+    }
+
+    const sameDayTasks = tasks.filter((task) => {
+      if (task.day !== formData.day) return false
+      if (editingTask && task.id === editingTask.id) return false
+      return true
+    })
+
+    const nextTask = sameDayTasks
+      .filter((task) => timeToMinutes(task.startTime) > startMinutes)
+      .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime))[0]
+
+    if (nextTask) {
+      const nextTaskStart = timeToMinutes(nextTask.startTime)
+
+      if (endMinutes > nextTaskStart) {
+        return `Temps insuffisant : une activité commence déjà à ${nextTask.startTime}. Réduis la durée ou choisis une autre heure.`
+      }
+    }
+
+    const overlappingTask = sameDayTasks.find((task) => {
+      const taskStart = timeToMinutes(task.startTime)
+      const taskEnd = taskStart + Number(task.duration)
+
+      return startMinutes < taskEnd && endMinutes > taskStart
+    })
+
+    if (overlappingTask) {
+      return `Conflit d’horaire : cette tâche chevauche déjà "${overlappingTask.title}".`
+    }
+
+    if (duration > maxAvailableDuration) {
+      return `Durée trop longue : il reste seulement ${maxAvailableDuration} min disponibles à partir de ${formData.startTime}.`
+    }
+
+    return ''
+  }
 
   async function handleSubmit(event) {
-
     event.preventDefault()
 
-    const safeDuration = Math.min(
-      Number(formData.duration),
-      maxAvailableDuration
-    )
+    const conflictMessage = getTaskConflictMessage()
 
-    const isSaved = await onSubmit({
-      ...formData,
-      duration: safeDuration,
-    })
+    if (conflictMessage) {
+      setLocalError(conflictMessage)
+      return
+    }
+
+    const isSaved = await onSubmit(formData)
 
     if (isSaved) {
       onClose()
@@ -351,9 +406,9 @@ export function TaskForm({
 
         </label>
 
-        {error && (
+        {(localError || error) && (
           <p className="task-form__error">
-            {error}
+            {localError || error}
           </p>
         )}
 
