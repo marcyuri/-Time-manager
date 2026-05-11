@@ -32,7 +32,6 @@ export function TaskForm({
   onSubmit,
   onClose,
 }) {
-
   const [formData, setFormData] = useState(initialForm)
   const [localError, setLocalError] = useState('')
 
@@ -67,6 +66,8 @@ export function TaskForm({
   }
 
   useEffect(() => {
+    setLocalError('')
+
     if (editingTask) {
       setFormData(editingTask)
       return
@@ -82,28 +83,17 @@ export function TaskForm({
   }, [editingTask, selectedDay, tasks])
 
   const maxAvailableDuration = useMemo(() => {
-
-    const startMinutes =
-      timeToMinutes(formData.startTime)
+    const startMinutes = timeToMinutes(formData.startTime)
 
     const nextTask = tasks
       .filter((task) => {
+        if (task.day !== formData.day) return false
 
-        if (task.day !== formData.day) {
+        if (editingTask && task.id === editingTask.id) {
           return false
         }
 
-        if (
-          editingTask &&
-          task.id === editingTask.id
-        ) {
-          return false
-        }
-
-        return (
-          timeToMinutes(task.startTime) >
-          startMinutes
-        )
+        return timeToMinutes(task.startTime) > startMinutes
       })
       .sort(
         (a, b) =>
@@ -115,11 +105,7 @@ export function TaskForm({
       ? timeToMinutes(nextTask.startTime)
       : 24 * 60
 
-    return Math.max(
-      1,
-      nextLimit - startMinutes
-    )
-
+    return Math.max(1, nextLimit - startMinutes)
   }, [
     formData.day,
     formData.startTime,
@@ -128,9 +114,9 @@ export function TaskForm({
   ])
 
   function updateField(field, value) {
+    setLocalError('')
 
     if (field === 'duration') {
-
       const safeDuration = Math.min(
         Number(value),
         maxAvailableDuration
@@ -149,6 +135,7 @@ export function TaskForm({
       [field]: value,
     }))
   }
+
   function getTaskConflictMessage() {
     const startMinutes = timeToMinutes(formData.startTime)
     const duration = Number(formData.duration)
@@ -232,12 +219,10 @@ export function TaskForm({
       }
       onClose={onClose}
     >
-
       <form
         className="task-form"
         onSubmit={handleSubmit}
       >
-
         <label>
           <span>Titre</span>
 
@@ -245,10 +230,7 @@ export function TaskForm({
             type="text"
             value={formData.title}
             onChange={(event) =>
-              updateField(
-                'title',
-                event.target.value
-              )
+              updateField('title', event.target.value)
             }
             placeholder="Ex: Réviser React"
             required
@@ -261,10 +243,7 @@ export function TaskForm({
           <textarea
             value={formData.description}
             onChange={(event) =>
-              updateField(
-                'description',
-                event.target.value
-              )
+              updateField('description', event.target.value)
             }
             placeholder="Détails de la tâche"
             rows="3"
@@ -272,21 +251,15 @@ export function TaskForm({
         </label>
 
         <div className="task-form__row">
-
           <label>
-
             <span>Jour</span>
 
             <select
               value={formData.day}
               onChange={(event) =>
-                updateField(
-                  'day',
-                  event.target.value
-                )
+                updateField('day', event.target.value)
               }
             >
-
               {WEEK_DAYS.map((day) => (
                 <option
                   key={day.key}
@@ -295,122 +268,95 @@ export function TaskForm({
                   {day.label}
                 </option>
               ))}
-
             </select>
-
           </label>
 
           <label>
-
             <span>Priorité</span>
 
             <select
               value={formData.priority}
               onChange={(event) =>
-                updateField(
-                  'priority',
-                  event.target.value
-                )
+                updateField('priority', event.target.value)
               }
             >
-
-              {PRIORITY_OPTIONS.map(
-                (priority) => (
-                  <option
-                    key={priority.value}
-                    value={priority.value}
-                  >
-                    {priority.label}
-                  </option>
-                )
-              )}
-
+              {PRIORITY_OPTIONS.map((priority) => (
+                <option
+                  key={priority.value}
+                  value={priority.value}
+                >
+                  {priority.label}
+                </option>
+              ))}
             </select>
-
           </label>
-
         </div>
 
         <div className="task-form__row">
-
           <label>
-
             <span>Début</span>
 
             <input
               type="time"
               value={formData.startTime}
               onChange={(event) =>
-                updateField(
-                  'startTime',
-                  event.target.value
-                )
+                updateField('startTime', event.target.value)
               }
               required
             />
-
           </label>
 
           <label>
-
             <span>Durée rapide</span>
 
             <select
               value={
                 DURATION_OPTIONS.some(
                   (option) =>
-                    option.value ===
-                    Number(formData.duration)
+                    option.value === Number(formData.duration)
                 )
                   ? formData.duration
-                  : 'custom'
+                  : Number(formData.duration) === maxAvailableDuration
+                    ? 'remaining'
+                    : 'custom'
               }
               onChange={(event) => {
-
-                if (
-                  event.target.value ===
-                  'custom'
-                ) {
+                if (event.target.value === 'custom') {
                   return
                 }
 
-                updateField(
-                  'duration',
-                  event.target.value
-                )
+                if (event.target.value === 'remaining') {
+                  updateField('duration', maxAvailableDuration)
+                  return
+                }
+
+                updateField('duration', event.target.value)
               }}
             >
+              {DURATION_OPTIONS.map((option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                  disabled={option.value > maxAvailableDuration}
+                >
+                  {option.label}
+                </option>
+              ))}
 
-              {DURATION_OPTIONS.map(
-                (option) => (
-                  <option
-                    key={option.value}
-                    value={option.value}
-                    disabled={
-                      option.value >
-                      maxAvailableDuration
-                    }
-                  >
-                    {option.label}
-                  </option>
-                )
-              )}
+              <option value="remaining">
+                Reste de la journée ({maxAvailableDuration} min)
+              </option>
 
               <option value="custom">
                 Personnalisé
               </option>
-
             </select>
-
           </label>
-
         </div>
 
         <label>
-
           <span>
-            Durée personnalisée
-            (minutes)
+            Durée personnalisée (minutes)
           </span>
 
           <input
@@ -419,22 +365,14 @@ export function TaskForm({
             max={maxAvailableDuration}
             value={formData.duration}
             onChange={(event) =>
-              updateField(
-                'duration',
-                event.target.value
-              )
+              updateField('duration', event.target.value)
             }
             required
           />
 
           <small>
-            Temps disponible :
-            {' '}
-            {maxAvailableDuration}
-            {' '}
-            min
+            Temps disponible : {maxAvailableDuration} min
           </small>
-
         </label>
 
         {(localError || error) && (
@@ -444,7 +382,6 @@ export function TaskForm({
         )}
 
         <div className="task-form__actions">
-
           <Button
             className="btn--secondary"
             onClick={onClose}
@@ -458,11 +395,8 @@ export function TaskForm({
           >
             Valider
           </Button>
-
         </div>
-
       </form>
-
     </Modal>
   )
 }
