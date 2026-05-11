@@ -36,19 +36,50 @@ export function TaskForm({
   const [formData, setFormData] = useState(initialForm)
   const [localError, setLocalError] = useState('')
 
-  useEffect(() => {
+  function getDefaultStartTimeForDay(day, tasks) {
+    const dayTasks = tasks
+      .filter((task) => task.day === day)
+      .sort(
+        (a, b) =>
+          timeToMinutes(a.startTime) -
+          timeToMinutes(b.startTime)
+      )
 
+    if (dayTasks.length === 0) {
+      return '08:00'
+    }
+
+    const lastTask = dayTasks[dayTasks.length - 1]
+
+    const lastTaskEnd =
+      timeToMinutes(lastTask.startTime) +
+      Number(lastTask.duration)
+
+    const hours = Math.floor(lastTaskEnd / 60)
+      .toString()
+      .padStart(2, '0')
+
+    const minutes = (lastTaskEnd % 60)
+      .toString()
+      .padStart(2, '0')
+
+    return `${hours}:${minutes}`
+  }
+
+  useEffect(() => {
     if (editingTask) {
       setFormData(editingTask)
       return
     }
 
+    const day = selectedDay || 'monday'
+
     setFormData({
       ...initialForm,
-      day: selectedDay || 'monday',
+      day,
+      startTime: getDefaultStartTimeForDay(day, tasks),
     })
-
-  }, [editingTask, selectedDay])
+  }, [editingTask, selectedDay, tasks])
 
   const maxAvailableDuration = useMemo(() => {
 
@@ -425,7 +456,7 @@ export function TaskForm({
             className="btn--primary"
             type="submit"
           >
-            Enregistrer
+            Valider
           </Button>
 
         </div>
