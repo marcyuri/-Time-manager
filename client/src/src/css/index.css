@@ -1,0 +1,110 @@
+:root {
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-danger: #ef4444;
+
+  --text-title: #0f172a;
+  --text-subtitle: #334155;
+  --text-body: #64748b;
+  --text-label: #94a3b8;
+  --text-light: #ffffff;
+
+  --task-neutral: #64748b;
+  --task-neutral-bg: #f1f5f9;
+  --task-low: #16a34a;
+  --task-low-bg: #dcfce7;
+  --task-medium: #ca8a04;
+  --task-medium-bg: #fef9c3;
+  --task-important: #dc2626;
+  --task-important-bg: #fee2e2;
+
+  --radius-card: 22px;
+  --radius-button: 14px;
+  --radius-input: 14px;
+  --shadow-card: 0 18px 50px rgba(15, 23, 42, 0.08);
+  --shadow-modal: 0 30px 80px rgba(15, 23, 42, 0.24);
+
+  --font-main: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  font-family: var(--font-main);
+  color: var(--text-body);
+  background: var(--color-bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(37, 99, 235, 0.45) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(37, 99, 235, 0.65),
+    rgba(14, 165, 233, 0.55)
+  );
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(37, 99, 235, 0.9),
+    rgba(14, 165, 233, 0.8)
+  );
+}
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 34%),
+    var(--color-bg);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+#root {
+  min-height: 100vh;
+}

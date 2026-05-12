@@ -1,0 +1,106 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.46);
+  backdrop-filter: blur(10px);
+}
+
+.modal {
+  width: min(620px, 100%);
+  max-height: min(760px, 92vh);
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 26px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-modal);
+}
+
+.modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 22px 0;
+}
+
+.modal__header h2 {
+  color: var(--text-title);
+}
+
+.modal__close {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--text-subtitle);
+  background: var(--color-surface-soft);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.task-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px;
+}
+
+.task-form label {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.task-form label span {
+  color: var(--text-subtitle);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.task-form input,
+.task-form select,
+.task-form textarea {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  padding: 13px 14px;
+  color: var(--text-title);
+  background: var(--color-surface-soft);
+  outline: none;
+}
+
+.task-form textarea {
+  resize: vertical;
+}
+
+.task-form__row {
+  display: flex;
+  gap: 12px;
+}
+
+.task-form__error {
+  padding: 12px 14px;
+  border-radius: 14px;
+  color: var(--color-danger);
+  background: var(--task-important-bg);
+  font-weight: 800;
+}
+
+.task-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+@media (max-width: 620px) {
+  .task-form__row,
+  .task-form__actions {
+    flex-direction: column;
+  }
+}
