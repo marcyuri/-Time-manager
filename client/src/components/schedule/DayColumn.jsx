@@ -1,38 +1,62 @@
+import { useDroppable } from '@dnd-kit/core'
 import { sortTasksByTime } from '../../utils/time'
 import { TaskCard } from './TaskCard'
 
-export function DayColumn({ day, tasks, onAddTask, onEditTask, onDeleteTask, onToggleStatus, onMoveTask}) {
-  const dayTasks = sortTasksByTime(tasks.filter((task) => task.day === day.key))
+export function DayColumn({
+  day,
+  tasks,
+  onAddTask,
+  onEditTask,
+  onDeleteTask,
+  onToggleStatus,
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: day.key,
+  })
+
+  const dayTasks = sortTasksByTime(
+    tasks.filter((task) => task.day === day.key)
+  )
 
   return (
     <section
-      className="day-column"
-      onDragOver={(event) => event.preventDefault()}
-      onDrop={(event) => {
-        event.preventDefault()
-
-        const taskId =
-          event.dataTransfer.getData('taskId')
-
-        if (taskId) {
-          onMoveTask(taskId, day.key)
-        }
-      }}
+      ref={setNodeRef}
+      className={`day-column ${
+        isOver ? 'day-column--over' : ''
+      }`}
     >
-      <div className="day-column__header">
+      <header className="day-column__header">
         <div>
-          <span>{day.shortLabel}</span>
-          <h2>{day.label}</h2>
-        </div>
-        <strong>{dayTasks.length}</strong>
-      </div>
+          <span>{day.label}</span>
 
-      <button className="day-column__add" type="button" onClick={() => onAddTask(day.key)}>
+          <h2>
+            {dayTasks.length}
+            {' '}
+            tâche
+            {dayTasks.length > 1 ? 's' : ''}
+          </h2>
+        </div>
+
+        <strong>
+          {dayTasks.length}
+        </strong>
+      </header>
+
+      <button
+        className="day-column__add"
+        onClick={() => onAddTask(day.key)}
+      >
         + Ajouter
       </button>
 
       <div className="day-column__tasks">
-        {dayTasks.length > 0 ? (
+        {dayTasks.length === 0 ? (
+          <div className="day-column__empty">
+            <p>
+              Aucune activité prévue.
+            </p>
+          </div>
+        ) : (
           dayTasks.map((task) => (
             <TaskCard
               key={task.id}
@@ -42,8 +66,6 @@ export function DayColumn({ day, tasks, onAddTask, onEditTask, onDeleteTask, onT
               onToggleStatus={onToggleStatus}
             />
           ))
-        ) : (
-          <p className="day-column__empty">Aucune tâche</p>
         )}
       </div>
     </section>
