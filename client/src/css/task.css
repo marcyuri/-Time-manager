@@ -144,3 +144,27 @@
   font-size: 1.1rem;
   font-weight: 900;
 }
+
+.task-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.task-card__top > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-card__top h3 {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.task-card__drag {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+}
