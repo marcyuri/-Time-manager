@@ -1,4 +1,5 @@
 import { useDraggable } from '@dnd-kit/core'
+import { formatDuration } from '../../utils/time'
 
 export function TaskCard({
   task,
@@ -57,8 +58,7 @@ export function TaskCard({
           <span>
             {task.startTime}
             {' • '}
-            {task.duration}
-            min
+            {formatDuration(task.duration)}
           </span>
 
         </div>

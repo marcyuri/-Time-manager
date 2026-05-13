@@ -88,7 +88,11 @@ export async function exportNodeAsPng(
     scrollY: 0,
   
     ignoreElements: (element) => {
-      return element.classList?.contains('day-column__add')
+      return (
+        element.classList?.contains('day-column__add') ||
+        element.classList?.contains('task-card__actions') ||
+        element.classList?.contains('task-card__drag')
+      )
     },
   })
 
