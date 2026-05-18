@@ -72,8 +72,8 @@ export async function exportNodeAsPng(
 
   await new Promise((resolve) => requestAnimationFrame(resolve))
 
-  const finalWidth = Math.ceil(node.scrollWidth + 24)
-  const finalHeight = Math.ceil(node.scrollHeight + 24)
+  const finalWidth = Math.ceil(node.scrollWidth)
+  const finalHeight = Math.ceil(node.scrollHeight)
 
   const canvas = await html2canvas(node, {
     scale: 2,
