@@ -153,3 +153,42 @@
     justify-content: flex-start;
   }
 }
+@media (max-width: 520px) {
+  .app-header {
+    align-items: stretch;
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .app-header__content {
+    width: 100%;
+  }
+
+  .app-header__content h1 {
+    font-size: 1.35rem;
+    line-height: 1.15;
+  }
+
+  .app-header__content p {
+    font-size: 0.86rem;
+  }
+
+  .header__planning-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .app-header__actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .app-header__actions select,
+  .app-header__actions button,
+  .app-header__actions input {
+    width: 100%;
+    min-width: 0;
+  }
+}
