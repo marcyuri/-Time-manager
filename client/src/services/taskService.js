@@ -1,3 +1,9 @@
+function generateId() {
+  return (
+    Date.now().toString(36) +
+    Math.random().toString(36).slice(2)
+  )
+}
 const STORAGE_KEY = 'time-manager-tasks'
 
 function getStoredTasks() {
@@ -18,7 +24,7 @@ export async function createTask(task) {
 
   const newTask = {
     ...task,
-    id: crypto.randomUUID(),
+    id: generateId(),
     createdAt: new Date().toISOString(),
   }
 

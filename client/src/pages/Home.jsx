@@ -4,6 +4,7 @@ import { TaskForm } from '../components/schedule/TaskForm'
 import { WeekCalendar } from '../components/schedule/WeekCalendar'
 import { useTasks } from '../hooks/useTasks'
 import { exportNodeAsPng } from '../utils/exportSchedule'
+import { useTaskTemplates } from '../hooks/useTaskTemplates'
 
 export default function Home() {
   const calendarRef = useRef(null)
@@ -25,6 +26,13 @@ export default function Home() {
     resetTasks,
     moveTask,
   } = useTasks()
+  const {
+    templates,
+    templateError,
+    createTemplate,
+    deleteTemplate,
+    editTemplate,
+  } = useTaskTemplates()
 
   function openAddTask(day) {
     setSelectedDay(day)
@@ -80,6 +88,11 @@ export default function Home() {
           error={error}
           onSubmit={upsertTask}
           onClose={closeForm}
+          templates={templates}
+          templateError={templateError}
+          onCreateTemplate={createTemplate}
+          onDeleteTemplate={deleteTemplate}
+          onEditTemplate={editTemplate}
         />
       )}
     </div>

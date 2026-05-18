@@ -4,6 +4,7 @@ import { WEEK_DAYS } from '../../data/weekDays'
 import { timeToMinutes } from '../../utils/time'
 import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
+import { Toast } from '../ui/Toast'
 
 const initialForm = {
   title: '',
@@ -29,45 +30,43 @@ export function TaskForm({
   editingTask,
   tasks = [],
   error,
+  templates = [],
+  templateError,
   onSubmit,
   onClose,
+  onCreateTemplate,
+  onDeleteTemplate,
+  onEditTemplate,
 }) {
   const [formData, setFormData] = useState(initialForm)
-  const [localError, setLocalError] = useState('')
+  const [editingTemplateId, setEditingTemplateId] = useState(null)
+  const [toast, setToast] = useState({ message: '', type: 'info' })
+
+  function showToast(message, type = 'info') {
+    setToast({ message, type })
+
+    setTimeout(() => {
+      setToast({ message: '', type: 'info' })
+    }, 3000)
+  }
 
   function getDefaultStartTimeForDay(day, tasks) {
     const dayTasks = tasks
       .filter((task) => task.day === day)
-      .sort(
-        (a, b) =>
-          timeToMinutes(a.startTime) -
-          timeToMinutes(b.startTime)
-      )
+      .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime))
 
-    if (dayTasks.length === 0) {
-      return '08:00'
-    }
+    if (dayTasks.length === 0) return '08:00'
 
     const lastTask = dayTasks[dayTasks.length - 1]
+    const lastTaskEnd = timeToMinutes(lastTask.startTime) + Number(lastTask.duration)
 
-    const lastTaskEnd =
-      timeToMinutes(lastTask.startTime) +
-      Number(lastTask.duration)
-
-    const hours = Math.floor(lastTaskEnd / 60)
-      .toString()
-      .padStart(2, '0')
-
-    const minutes = (lastTaskEnd % 60)
-      .toString()
-      .padStart(2, '0')
+    const hours = Math.floor(lastTaskEnd / 60).toString().padStart(2, '0')
+    const minutes = (lastTaskEnd % 60).toString().padStart(2, '0')
 
     return `${hours}:${minutes}`
   }
 
   useEffect(() => {
-    setLocalError('')
-
     if (editingTask) {
       setFormData(editingTask)
       return
@@ -88,43 +87,22 @@ export function TaskForm({
     const nextTask = tasks
       .filter((task) => {
         if (task.day !== formData.day) return false
-
-        if (editingTask && task.id === editingTask.id) {
-          return false
-        }
+        if (editingTask && task.id === editingTask.id) return false
 
         return timeToMinutes(task.startTime) > startMinutes
       })
-      .sort(
-        (a, b) =>
-          timeToMinutes(a.startTime) -
-          timeToMinutes(b.startTime)
-      )[0]
+      .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime))[0]
 
-    const nextLimit = nextTask
-      ? timeToMinutes(nextTask.startTime)
-      : 24 * 60
+    const nextLimit = nextTask ? timeToMinutes(nextTask.startTime) : 24 * 60
 
     return Math.max(1, nextLimit - startMinutes)
-  }, [
-    formData.day,
-    formData.startTime,
-    tasks,
-    editingTask,
-  ])
+  }, [formData.day, formData.startTime, tasks, editingTask])
 
   function updateField(field, value) {
-    setLocalError('')
-
     if (field === 'duration') {
-      const safeDuration = Math.min(
-        Number(value),
-        maxAvailableDuration
-      )
-
       setFormData((currentForm) => ({
         ...currentForm,
-        duration: safeDuration,
+        duration: Math.min(Number(value), maxAvailableDuration),
       }))
 
       return
@@ -141,39 +119,17 @@ export function TaskForm({
     const duration = Number(formData.duration)
     const endMinutes = startMinutes + duration
 
-    if (!formData.title.trim()) {
-      return 'Le titre de la tâche est obligatoire.'
-    }
-
-    if (!formData.startTime) {
-      return 'L’heure de début est obligatoire.'
-    }
-
-    if (!duration || duration <= 0) {
-      return 'La durée doit être supérieure à 0 minute.'
-    }
-
-    if (endMinutes > 24 * 60) {
-      return 'La tâche dépasse la fin de la journée.'
-    }
+    if (!formData.title.trim()) return 'Le titre de la tâche est obligatoire.'
+    if (!formData.startTime) return 'L’heure de début est obligatoire.'
+    if (!duration || duration <= 0) return 'La durée doit être supérieure à 0 minute.'
+    if (endMinutes > 24 * 60) return 'La tâche dépasse la fin de la journée.'
 
     const sameDayTasks = tasks.filter((task) => {
       if (task.day !== formData.day) return false
       if (editingTask && task.id === editingTask.id) return false
+
       return true
     })
-
-    const nextTask = sameDayTasks
-      .filter((task) => timeToMinutes(task.startTime) > startMinutes)
-      .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime))[0]
-
-    if (nextTask) {
-      const nextTaskStart = timeToMinutes(nextTask.startTime)
-
-      if (endMinutes > nextTaskStart) {
-        return `Temps insuffisant : une activité commence déjà à ${nextTask.startTime}. Réduis la durée ou choisis une autre heure.`
-      }
-    }
 
     const overlappingTask = sameDayTasks.find((task) => {
       const taskStart = timeToMinutes(task.startTime)
@@ -183,14 +139,68 @@ export function TaskForm({
     })
 
     if (overlappingTask) {
-      return `Conflit d’horaire : cette tâche chevauche déjà "${overlappingTask.title}".`
-    }
-
-    if (duration > maxAvailableDuration) {
-      return `Durée trop longue : il reste seulement ${maxAvailableDuration} min disponibles à partir de ${formData.startTime}.`
+      return `Conflit d’horaire avec "${overlappingTask.title}".`
     }
 
     return ''
+  }
+
+  function applyTemplate(templateId) {
+    if (!templateId) return
+
+    const template = templates.find((item) => item.id === templateId)
+    if (!template) return
+
+    setFormData((currentForm) => ({
+      ...currentForm,
+      title: template.title,
+      description: template.description || '',
+      duration: Math.min(Number(template.duration), maxAvailableDuration),
+      priority: template.priority,
+    }))
+  }
+
+  async function saveAsTemplate() {
+    if (!formData.title.trim()) {
+      showToast('Le titre est obligatoire pour créer un modèle.', 'error')
+      return
+    }
+
+    const isSaved = await onCreateTemplate({
+      title: formData.title,
+      description: formData.description,
+      duration: Number(formData.duration),
+      priority: formData.priority,
+    })
+
+    if (isSaved) {
+      showToast('Modèle enregistré.', 'success')
+    }
+  }
+
+  async function saveTemplateChanges() {
+    if (!editingTemplateId) return
+
+    const isSaved = await onEditTemplate(editingTemplateId, {
+      title: formData.title,
+      description: formData.description,
+      duration: Number(formData.duration),
+      priority: formData.priority,
+    })
+
+    if (isSaved) {
+      setEditingTemplateId(null)
+      showToast('Modèle mis à jour.', 'success')
+    }
+  }
+
+  async function deleteTemplate(templateId) {
+    const isDeleted = await onDeleteTemplate(templateId)
+
+    if (isDeleted) {
+      setEditingTemplateId(null)
+      showToast('Modèle supprimé.', 'success')
+    }
   }
 
   async function handleSubmit(event) {
@@ -199,7 +209,7 @@ export function TaskForm({
     const conflictMessage = getTaskConflictMessage()
 
     if (conflictMessage) {
-      setLocalError(conflictMessage)
+      showToast(conflictMessage, 'error')
       return
     }
 
@@ -212,26 +222,65 @@ export function TaskForm({
 
   return (
     <Modal
-      title={
-        editingTask
-          ? 'Modifier la tâche'
-          : 'Ajouter une tâche'
-      }
+      title={editingTask ? 'Modifier la tâche' : 'Ajouter une tâche'}
       onClose={onClose}
     >
-      <form
-        className="task-form"
-        onSubmit={handleSubmit}
-      >
+      <form className="task-form" onSubmit={handleSubmit}>
+        {templates.length > 0 && (
+          <label>
+            <span>Modèle sélectionné</span>
+
+            <select
+              value={editingTemplateId || ''}
+              onChange={(event) => {
+                const templateId = event.target.value
+
+                if (!templateId) {
+                  setEditingTemplateId(null)
+                  return
+                }
+
+                setEditingTemplateId(templateId)
+                applyTemplate(templateId)
+              }}
+            >
+              <option value="">Aucun modèle sélectionné</option>
+
+              {templates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.title}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {editingTemplateId && (
+          <div className="task-template-selected">
+            <span>
+              Modèle actif :{' '}
+              {templates.find((template) => template.id === editingTemplateId)?.title}
+            </span>
+
+            <div>
+              <button type="button" onClick={saveTemplateChanges}>
+                Modifier
+              </button>
+
+              <button type="button" onClick={() => deleteTemplate(editingTemplateId)}>
+                Supprimer
+              </button>
+            </div>
+          </div>
+        )}
+
         <label>
           <span>Titre</span>
 
           <input
             type="text"
             value={formData.title}
-            onChange={(event) =>
-              updateField('title', event.target.value)
-            }
+            onChange={(event) => updateField('title', event.target.value)}
             placeholder="Ex: Réviser React"
             required
           />
@@ -242,9 +291,7 @@ export function TaskForm({
 
           <textarea
             value={formData.description}
-            onChange={(event) =>
-              updateField('description', event.target.value)
-            }
+            onChange={(event) => updateField('description', event.target.value)}
             placeholder="Détails de la tâche"
             rows="3"
           />
@@ -256,15 +303,10 @@ export function TaskForm({
 
             <select
               value={formData.day}
-              onChange={(event) =>
-                updateField('day', event.target.value)
-              }
+              onChange={(event) => updateField('day', event.target.value)}
             >
               {WEEK_DAYS.map((day) => (
-                <option
-                  key={day.key}
-                  value={day.key}
-                >
+                <option key={day.key} value={day.key}>
                   {day.label}
                 </option>
               ))}
@@ -276,15 +318,10 @@ export function TaskForm({
 
             <select
               value={formData.priority}
-              onChange={(event) =>
-                updateField('priority', event.target.value)
-              }
+              onChange={(event) => updateField('priority', event.target.value)}
             >
               {PRIORITY_OPTIONS.map((priority) => (
-                <option
-                  key={priority.value}
-                  value={priority.value}
-                >
+                <option key={priority.value} value={priority.value}>
                   {priority.label}
                 </option>
               ))}
@@ -299,9 +336,7 @@ export function TaskForm({
             <input
               type="time"
               value={formData.startTime}
-              onChange={(event) =>
-                updateField('startTime', event.target.value)
-              }
+              onChange={(event) => updateField('startTime', event.target.value)}
               required
             />
           </label>
@@ -312,8 +347,7 @@ export function TaskForm({
             <select
               value={
                 DURATION_OPTIONS.some(
-                  (option) =>
-                    option.value === Number(formData.duration)
+                  (option) => option.value === Number(formData.duration)
                 )
                   ? formData.duration
                   : Number(formData.duration) === maxAvailableDuration
@@ -321,9 +355,7 @@ export function TaskForm({
                     : 'custom'
               }
               onChange={(event) => {
-                if (event.target.value === 'custom') {
-                  return
-                }
+                if (event.target.value === 'custom') return
 
                 if (event.target.value === 'remaining') {
                   updateField('duration', maxAvailableDuration)
@@ -347,56 +379,54 @@ export function TaskForm({
                 Reste de la journée ({maxAvailableDuration} min)
               </option>
 
-              <option value="custom">
-                Personnalisé
-              </option>
+              <option value="custom">Personnalisé</option>
             </select>
           </label>
         </div>
 
         <label>
-          <span>
-            Durée personnalisée (minutes)
-          </span>
+          <span>Durée personnalisée (minutes)</span>
 
           <input
             type="number"
             min="1"
             max={maxAvailableDuration}
             value={formData.duration}
-            onChange={(event) =>
-              updateField('duration', event.target.value)
-            }
+            onChange={(event) => updateField('duration', event.target.value)}
             required
           />
 
-          <small>
-            Temps disponible : {maxAvailableDuration} min
-          </small>
+          <small>Temps disponible : {maxAvailableDuration} min</small>
         </label>
-
-        {(localError || error) && (
-          <p className="task-form__error">
-            {localError || error}
-          </p>
-        )}
 
         <div className="task-form__actions">
           <Button
             className="btn--secondary"
+            type="button"
+            onClick={saveAsTemplate}
+          >
+            Enregistrer comme modèle
+          </Button>
+
+          <Button
+            className="btn--secondary"
+            type="button"
             onClick={onClose}
           >
             Annuler
           </Button>
 
-          <Button
-            className="btn--primary"
-            type="submit"
-          >
+          <Button className="btn--primary" type="submit">
             Valider
           </Button>
         </div>
       </form>
+
+      <Toast
+        message={toast.message || error || templateError}
+        type={toast.message ? toast.type : 'error'}
+        onClose={() => setToast({ message: '', type: 'info' })}
+      />
     </Modal>
   )
 }
